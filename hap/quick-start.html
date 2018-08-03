@@ -615,14 +615,19 @@ DemoDetailView继承DemoSimpleView。
 </div>
 </div>
 </div>
-</div>
 <div class="section" id="id11">
-<h2>前端开发<a class="headerlink" href="#id11" title="永久链接至标题">¶</a></h2>
-<p>前端开发的核心在于CSS HTML JS的分离以及模块化，以提高可维护性。</p>
+<h3>Mapper<a class="headerlink" href="#id11" title="永久链接至标题">¶</a></h3>
+<blockquote>
+<div>TODO</div></blockquote>
+</div>
+</div>
 <div class="section" id="id12">
-<h3>模板<a class="headerlink" href="#id12" title="永久链接至标题">¶</a></h3>
+<h2>前端开发<a class="headerlink" href="#id12" title="永久链接至标题">¶</a></h2>
+<p>前端开发的核心在于CSS HTML JS的分离以及模块化，以提高可维护性。</p>
 <div class="section" id="id13">
-<h4>效果<a class="headerlink" href="#id13" title="永久链接至标题">¶</a></h4>
+<h3>模板<a class="headerlink" href="#id13" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id14">
+<h4>效果<a class="headerlink" href="#id14" title="永久链接至标题">¶</a></h4>
 <img alt="../_images/quick-start-demo.jpg" src="../_images/quick-start-demo.jpg" />
 <div class="code html highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;script src=&#39;${base.contextPath}/common/code?yesOrNo=SYS.YES_NO&amp;alignType=SYS.ALIGN_TYPE&#39;&gt;&lt;/script&gt;
 &lt;style&gt;
@@ -852,13 +857,13 @@ DemoDetailView继承DemoSimpleView。
 </div>
 </div>
 </div>
-<div class="section" id="id14">
-<h3>快码引入<a class="headerlink" href="#id14" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id15">
+<h3>快码引入<a class="headerlink" href="#id15" title="永久链接至标题">¶</a></h3>
 <p>引入多个快码用 <code class="docutils literal notranslate"><span class="pre">&amp;</span></code> 连接，避免多次发送Http请求带来的性能损耗。如下所示:</p>
 <p><code class="docutils literal notranslate"><span class="pre">&lt;script</span> <span class="pre">src=/'${base.contextPath}/common/code?yesOrNo=SYS.YES_NO&amp;alignType=SYS.ALIGN_TYPE'&gt;&lt;/script&gt;</span></code></p>
 </div>
-<div class="section" id="id15">
-<h3>模块化<a class="headerlink" href="#id15" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id16">
+<h3>模块化<a class="headerlink" href="#id16" title="永久链接至标题">¶</a></h3>
 <ul class="simple">
 <li>一个普通的 Kendo Grid 一般需要一个工具组组件和一个条件查询组件。可以用 Kendo Template 封装，然后在Grid中引入。核心的
 html元素一个div标签足够</li>
@@ -906,8 +911,8 @@ html元素一个div标签足够</li>
 <span class="n">var</span> <span class="n">dataSource</span> <span class="o">=</span> <span class="n">Hap</span><span class="o">.</span><span class="n">createGridDataSource</span><span class="p">(</span><span class="n">dataSourceConfig</span><span class="p">);</span>
 </pre></div>
 </div>
-<div class="section" id="id16">
-<h4>前端数据校验<a class="headerlink" href="#id16" title="永久链接至标题">¶</a></h4>
+<div class="section" id="id17">
+<h4>前端数据校验<a class="headerlink" href="#id17" title="永久链接至标题">¶</a></h4>
 <p>前端的数据校验在DataSource中的Model中完成。
 在model-fileds-[property]中</p>
 <ul class="simple">
@@ -919,10 +924,10 @@ html元素一个div标签足够</li>
 </ul>
 </div>
 </div>
-<div class="section" id="id17">
-<h3>自定义单元格展示模板及编辑器<a class="headerlink" href="#id17" title="永久链接至标题">¶</a></h3>
 <div class="section" id="id18">
-<h4>展示模板<a class="headerlink" href="#id18" title="永久链接至标题">¶</a></h4>
+<h3>自定义单元格展示模板及编辑器<a class="headerlink" href="#id18" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id19">
+<h4>展示模板<a class="headerlink" href="#id19" title="永久链接至标题">¶</a></h4>
 <p>在 <code class="docutils literal notranslate"><span class="pre">grid.columns.template</span></code> 中配置</p>
 <p>配置展示样式(强调)</p>
 <div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">columns</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span>
@@ -943,11 +948,11 @@ html元素一个div标签足够</li>
 </pre></div>
 </div>
 </div>
-<div class="section" id="id19">
-<h4>常用编辑器<a class="headerlink" href="#id19" title="永久链接至标题">¶</a></h4>
-<p>在 <code class="docutils literal notranslate"><span class="pre">grid.columns.editor</span></code> 中配置</p>
 <div class="section" id="id20">
-<h5>多语言<a class="headerlink" href="#id20" title="永久链接至标题">¶</a></h5>
+<h4>常用编辑器<a class="headerlink" href="#id20" title="永久链接至标题">¶</a></h4>
+<p>在 <code class="docutils literal notranslate"><span class="pre">grid.columns.editor</span></code> 中配置</p>
+<div class="section" id="id21">
+<h5>多语言<a class="headerlink" href="#id21" title="永久链接至标题">¶</a></h5>
 <div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>editor: function (container, options) {
             $(&#39;&lt;input required name= &quot;&#39; + options.field + &#39;&quot; /&gt;&#39;)
                 .appendTo(container)
@@ -1024,8 +1029,8 @@ html元素一个div标签足够</li>
 <p>viewModel 用于做和页面数据的双向绑定，同时可以存放一些自定义的函数。比如完成组件初始化的函数- <code class="docutils literal notranslate"><span class="pre">prepareComponnents()</span></code></p>
 </div>
 </div>
-<div class="section" id="id21">
-<h2>其他<a class="headerlink" href="#id21" title="永久链接至标题">¶</a></h2>
+<div class="section" id="id22">
+<h2>其他<a class="headerlink" href="#id22" title="永久链接至标题">¶</a></h2>
 <ol class="arabic simple">
 <li>Hap 框架上的某些功能不能满足需求</li>
 </ol>
@@ -1056,8 +1061,8 @@ html元素一个div标签足够</li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Hap 开发基本流程</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">说明</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id2">后端开发</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id11">前端开发</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id21">其他</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">前端开发</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id22">其他</a></li>
 </ul>
 </li>
 </ul>
