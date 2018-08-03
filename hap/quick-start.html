@@ -1,0 +1,1105 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh_CN">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Hap 开发基本流程 &#8212; 文档 rc 文档</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/translations.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="prev" title="Hap开发相关文档" href="../index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="hap">
+<h1>Hap 开发基本流程<a class="headerlink" href="#hap" title="永久链接至标题">¶</a></h1>
+<div class="section" id="id1">
+<h2>说明<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h2>
+<p>本文展示了最基本的Hap开发流程，以完成数据的增删改查操作及结合Kendo UI完成前台数据展示，并对一些相关的概念
+进行了简单的介绍。</p>
+</div>
+<div class="section" id="id2">
+<h2>后端开发<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<p>假设我们现在要对一张用户表进行CRUD操作。表名为“hap_quick_start_demo”。</p>
+<div class="section" id="dto">
+<h3>DTO<a class="headerlink" href="#dto" title="永久链接至标题">¶</a></h3>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@ExtensionAttribute</span><span class="p">(</span><span class="n">disable</span> <span class="o">=</span> <span class="n">true</span><span class="p">)</span>
+<span class="nd">@Table</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hap_quick_start_demo&quot;</span><span class="p">)</span>
+<span class="nd">@AdminConstraint</span>
+<span class="n">public</span> <span class="k">class</span> <span class="nc">Demo</span> <span class="n">extends</span> <span class="n">BaseDTO</span> <span class="p">{</span>
+
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_ID</span> <span class="o">=</span> <span class="s2">&quot;id&quot;</span><span class="p">;</span>
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_NAME</span> <span class="o">=</span> <span class="s2">&quot;name&quot;</span><span class="p">;</span>
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_NUMBER</span> <span class="o">=</span> <span class="s2">&quot;number&quot;</span><span class="p">;</span>
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_AGE</span> <span class="o">=</span> <span class="s2">&quot;age&quot;</span><span class="p">;</span>
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_BIRTHDAY</span> <span class="o">=</span> <span class="s2">&quot;birthday&quot;</span><span class="p">;</span>
+   <span class="n">public</span> <span class="n">static</span> <span class="n">final</span> <span class="n">String</span> <span class="n">FIELD_DELETED_FLAG</span> <span class="o">=</span> <span class="s2">&quot;deletedFlag&quot;</span><span class="p">;</span>
+
+
+    <span class="n">public</span> <span class="n">interface</span> <span class="n">DemoSimpleView</span> <span class="p">{};</span>
+    <span class="n">public</span> <span class="n">interface</span> <span class="n">DemoDetailView</span> <span class="n">extends</span> <span class="n">DemoSimpleView</span> <span class="p">{};</span>
+
+    <span class="nd">@Id</span>
+    <span class="nd">@GeneratedValue</span>
+    <span class="n">private</span> <span class="n">Long</span> <span class="nb">id</span><span class="p">;</span>
+
+    <span class="nd">@Length</span><span class="p">(</span><span class="nb">max</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;名字不可以超过50个字符&quot;</span><span class="p">)</span>
+    <span class="nd">@NotBlank</span>
+    <span class="n">private</span> <span class="n">String</span> <span class="n">name</span><span class="p">;</span>
+
+    <span class="nd">@Length</span><span class="p">(</span><span class="nb">max</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;工号不可以超过15个字符&quot;</span><span class="p">)</span>
+    <span class="nd">@NotBlank</span>
+    <span class="nd">@NumberNonexistent</span>
+    <span class="n">private</span> <span class="n">String</span> <span class="n">number</span><span class="p">;</span>
+
+    <span class="nd">@Min</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;年龄不可以小于1&quot;</span><span class="p">)</span>
+    <span class="n">private</span> <span class="n">Integer</span> <span class="n">age</span><span class="p">;</span>
+
+    <span class="nd">@Past</span><span class="p">(</span><span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;生日必须为过去的时间&quot;</span><span class="p">)</span>
+    <span class="n">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="p">;</span>
+
+    <span class="nd">@NumberTrueOrFalse</span>
+    <span class="nd">@Column</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;is_deleted&quot;</span><span class="p">)</span>
+    <span class="n">private</span> <span class="n">Integer</span> <span class="n">deletedFlag</span><span class="p">;</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoSimpleView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">Long</span> <span class="n">getId</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">id</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setId</span><span class="p">(</span><span class="n">Long</span> <span class="nb">id</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoSimpleView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">String</span> <span class="n">getName</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setName</span><span class="p">(</span><span class="n">String</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoSimpleView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">String</span> <span class="n">getNumber</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">number</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setNumber</span><span class="p">(</span><span class="n">String</span> <span class="n">number</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">number</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoDetailView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">Integer</span> <span class="n">getAge</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">age</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setAge</span><span class="p">(</span><span class="n">Integer</span> <span class="n">age</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="n">age</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoDetailView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">Date</span> <span class="n">getBirthday</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">birthday</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setBirthday</span><span class="p">(</span><span class="n">Date</span> <span class="n">birthday</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">birthday</span> <span class="o">=</span> <span class="n">birthday</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">DemoDetailView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">Integer</span> <span class="n">getDeletedFlag</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">deletedFlag</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">public</span> <span class="n">void</span> <span class="n">setDeletedFlag</span><span class="p">(</span><span class="n">Integer</span> <span class="n">deletedFlag</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">this</span><span class="o">.</span><span class="n">deletedFlag</span> <span class="o">=</span> <span class="n">deletedFlag</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="section" id="id3">
+<h4>常用注解<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h4>
+<p><strong>通用Mapper注解</strong>  <a class="reference external" href="https://github.com/abel533/Mapper/wiki/2.2-mapping">详见通用Mapper文档</a></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;NameStyle</span></code> 应用于DTO类 默认将实体类字段按驼峰转下划线形式转换为表列名 userName -&gt; user_name</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;ColumnType</span></code> 与 <code class="docutils literal notranslate"><span class="pre">&#64;Column</span></code> 类似</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;KeySql</span></code> 配置如何生成主键</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Version</span></code> 实现乐观锁主键</div>
+</div>
+<p><strong>JPA注解</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Table</span></code> <strong>常用</strong> <strong>必须</strong> 用于类 标示所对应的表</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Column</span></code> <strong>常用</strong> 如果DTO字段名和表字段名不一致，可以用此字段表示</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Transient</span></code> <strong>常用</strong> 注解非表内字段</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Id</span></code> <strong>常用</strong> <strong>必须</strong> 标示主键字段</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;GeneratedValue</span></code> <strong>常用</strong> <strong>必须</strong> 配置如何生成主键 和&#64;Id合用</div>
+</div>
+<p><strong>Hap注解</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;ExtensionAttribute(disable</span> <span class="pre">=</span> <span class="pre">true)</span></code>  <strong>常用</strong> <strong>必须</strong> 用于类 弹性字段 默认启用弹性字段</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Condition</span></code> 配置Where查询</div>
+</div>
+<ul class="simple">
+<li>operator <code class="docutils literal notranslate"><span class="pre">=</span></code>  <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>  <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> <code class="docutils literal notranslate"><span class="pre">=&gt;</span></code> <code class="docutils literal notranslate"><span class="pre">LIKE</span></code> <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code>  <code class="docutils literal notranslate"><span class="pre">!=</span></code> 默认为 <code class="docutils literal notranslate"><span class="pre">=</span></code></li>
+<li>autowarp 当operator为LIKE是有效 true -&gt; <code class="docutils literal notranslate"><span class="pre">xx</span> <span class="pre">LIKE</span> <span class="pre">concat('%',concat(#{yy},'%'))</span></code> false -&gt; <code class="docutils literal notranslate"><span class="pre">xx</span> <span class="pre">LIKE</span> <span class="pre">#{yy}</span></code> 默认为true</li>
+<li>exclude 排除这个字段 默认为false</li>
+</ul>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;MultiLanguage</span></code> 标示多语言类</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;MultiLanguageField</span></code> 标示多语言字段</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&#64;Children</span></code> 标示头行结构行list字段</div>
+</div>
+<blockquote>
+<div><blockquote>
+<div>使用 <code class="docutils literal notranslate"><span class="pre">&#64;Column</span></code> 的意义:</div></blockquote>
+<p>【强制】表达是与否概念的字段，必须使用 is_xxx 的方式命名，数据类型是 unsigned tinyint 、
+（1表示是， 0表示否）（参见:阿里Java开发规范-MySQL数据库-建表规约-1）</p>
+<p>【强制】 POJO 类中布尔类型的变量，都不要加 is，否则部分框架解析会引起序列化错误。（参见:阿里Java开发规范-编程规约-命名风格-8）</p>
+</div></blockquote>
+<p>其他注解将在后续内容进行讲解</p>
+</div>
+</div>
+<div class="section" id="controller">
+<h3>Controller<a class="headerlink" href="#controller" title="永久链接至标题">¶</a></h3>
+<p>Controller 层主要有3个功能：数据校验 调用Service 数据返回处理 以完成CRUD操作</p>
+<div class="section" id="id4">
+<h4>基本用法<a class="headerlink" href="#id4" title="永久链接至标题">¶</a></h4>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@RestController</span>
+<span class="n">public</span> <span class="k">class</span> <span class="nc">DemoController</span> <span class="n">extends</span> <span class="n">BaseController</span> <span class="p">{</span>
+    <span class="nd">@Autowired</span>
+    <span class="n">private</span> <span class="n">DemoService</span> <span class="n">service</span><span class="p">;</span>
+
+    <span class="nd">@PostMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;/hap/demo/query&quot;</span><span class="p">)</span>
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">DemoDetailView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">ResponseData</span> <span class="n">query</span><span class="p">(</span><span class="n">Demo</span> <span class="n">dto</span><span class="p">,</span> <span class="nd">@RequestParam</span><span class="p">(</span><span class="n">defaultValue</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span><span class="p">)</span> <span class="nb">int</span> <span class="n">page</span><span class="p">,</span>
+                                       <span class="nd">@RequestParam</span><span class="p">(</span><span class="n">defaultValue</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE_SIZE</span><span class="p">)</span> <span class="nb">int</span> <span class="n">pageSize</span><span class="p">,</span> <span class="n">HttpServletRequest</span> <span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">IRequest</span> <span class="n">requestContext</span> <span class="o">=</span> <span class="n">createRequestContext</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">new</span> <span class="n">ResponseData</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">requestContext</span><span class="p">,</span> <span class="n">dto</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">pageSize</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="nd">@PostMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;/hap/demo/querySimple&quot;</span><span class="p">)</span>
+    <span class="nd">@JsonView</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">DemoSimpleView</span><span class="o">.</span><span class="n">class</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">ResponseData</span> <span class="n">querySimple</span><span class="p">(</span><span class="n">Demo</span> <span class="n">dto</span><span class="p">,</span> <span class="nd">@RequestParam</span><span class="p">(</span><span class="n">defaultValue</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE</span><span class="p">)</span> <span class="nb">int</span> <span class="n">page</span><span class="p">,</span>
+                              <span class="nd">@RequestParam</span><span class="p">(</span><span class="n">defaultValue</span> <span class="o">=</span> <span class="n">DEFAULT_PAGE_SIZE</span><span class="p">)</span> <span class="nb">int</span> <span class="n">pageSize</span><span class="p">,</span> <span class="n">HttpServletRequest</span> <span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">IRequest</span> <span class="n">requestContext</span> <span class="o">=</span> <span class="n">createRequestContext</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">new</span> <span class="n">ResponseData</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">requestContext</span><span class="p">,</span> <span class="n">dto</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">pageSize</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="nd">@PostMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;/hap/demo/submit&quot;</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">ResponseData</span> <span class="n">update</span><span class="p">(</span><span class="nd">@RequestBody</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Demo</span><span class="o">&gt;</span> <span class="n">dto</span><span class="p">,</span> <span class="n">BindingResult</span> <span class="n">result</span><span class="p">,</span> <span class="n">HttpServletRequest</span> <span class="n">request</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">getValidator</span><span class="p">()</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">dto</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">hasErrors</span><span class="p">())</span> <span class="p">{</span>
+            <span class="n">ResponseData</span> <span class="n">responseData</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ResponseData</span><span class="p">(</span><span class="n">false</span><span class="p">);</span>
+            <span class="n">responseData</span><span class="o">.</span><span class="n">setMessage</span><span class="p">(</span><span class="n">getErrorMessage</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">request</span><span class="p">));</span>
+            <span class="k">return</span> <span class="n">responseData</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">IRequest</span> <span class="n">requestCtx</span> <span class="o">=</span> <span class="n">createRequestContext</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">new</span> <span class="n">ResponseData</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">batchUpdate</span><span class="p">(</span><span class="n">requestCtx</span><span class="p">,</span> <span class="n">dto</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="nd">@PostMapping</span><span class="p">(</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;/hap/demo/remove&quot;</span><span class="p">)</span>
+    <span class="n">public</span> <span class="n">ResponseData</span> <span class="n">delete</span><span class="p">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="p">,</span> <span class="nd">@RequestBody</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Demo</span><span class="o">&gt;</span> <span class="n">dto</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">service</span><span class="o">.</span><span class="n">batchDelete</span><span class="p">(</span><span class="n">dto</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">new</span> <span class="n">ResponseData</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="basecontroller">
+<h4>BaseController<a class="headerlink" href="#basecontroller" title="永久链接至标题">¶</a></h4>
+<p>如示例代码所示，DemoController通过继承BaseController获得Hap内置的
+一些功能特性，比如Token的校验、校验失败信息的处理、国际化等。</p>
+<div class="section" id="id5">
+<h5>属性<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h5>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">DEFAULT_PAGE</span></code> 默认起始页面</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">DEFAULT_PAGE_SIZE</span></code> 默认页面大小</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">SYS_VALIDATION_PREFIX</span></code> 系统校验前缀</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">DEFAULT_VIEW_HOME</span></code> 默认视图根目录</div>
+</div>
+</div>
+<div class="section" id="id6">
+<h5>方法<a class="headerlink" href="#id6" title="永久链接至标题">¶</a></h5>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">String</span> <span class="pre">getViewPath()</span></code> 获取视图根目录</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">IRequest</span> <span class="pre">createRequestContext(HttpServletRequest</span> <span class="pre">request)</span></code> <strong>常用</strong>  从HttpSession或者 SecurityContext
+中获取UserId / RoleId / UserName / CompanyId  /Locale / EmployeeCode / AllRoleId 等信息，封装进IRequest对象</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">checkToken(HttpServletRequest</span> <span class="pre">request,</span> <span class="pre">Collection&lt;?</span> <span class="pre">extends</span> <span class="pre">BaseDTO&gt;</span> <span class="pre">dtos)</span> <span class="pre">throws</span> <span class="pre">TokenException</span></code>
+进行Token校验</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Object</span> <span class="pre">exceptionHandler(Exception</span> <span class="pre">exception,</span> <span class="pre">HttpServletRequest</span> <span class="pre">request)</span></code> 处理控制层异常，以 ResponseData 封装 或者 ModelAndView 返回</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Validator</span> <span class="pre">getValidator()</span></code>  获取校验器 常与getErrorMessage配合使用</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">String</span> <span class="pre">getErrorMessage(Errors</span> <span class="pre">errors,</span> <span class="pre">HttpServletRequest</span> <span class="pre">request)</span></code> <strong>常用</strong> 获取标准校验失败信息</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Long</span> <span class="pre">getUserId(HttpServletRequest</span> <span class="pre">request)</span></code> 获取用户ID</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Long</span> <span class="pre">getRoleId(HttpServletRequest</span> <span class="pre">request)</span></code> 获取角色ID</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">String</span> <span class="pre">getLanguage(HttpServletRequest</span> <span class="pre">request)</span></code> 获取语言编码</div>
+</div>
+</div>
+</div>
+<div class="section" id="id7">
+<h4>后端数据校验<a class="headerlink" href="#id7" title="永久链接至标题">¶</a></h4>
+<div class="section" id="hibernate">
+<h5>Hibernate 校验<a class="headerlink" href="#hibernate" title="永久链接至标题">¶</a></h5>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>注解</td>
+<td>含义</td>
+</tr>
+<tr class="row-even"><td>&#64;CreditCardNumber(ignoreNonDigitCharacters)</td>
+<td>字符串必须是信用卡号(按美国标准校验)</td>
+</tr>
+<tr class="row-odd"><td>&#64;EAN</td>
+<td>检查是否为欧洲商品编码</td>
+</tr>
+<tr class="row-even"><td>&#64;Email</td>
+<td>字符串必须是email</td>
+</tr>
+<tr class="row-odd"><td>&#64;Length(min=,max=)</td>
+<td>检查字符串长度</td>
+</tr>
+<tr class="row-even"><td>&#64;LuhnCheck</td>
+<td>信用卡号校验（模10校验）</td>
+</tr>
+<tr class="row-odd"><td>&#64;Mod10Check</td>
+<td>模10校验</td>
+</tr>
+<tr class="row-even"><td>&#64;Mod11Check</td>
+<td>模11校验</td>
+</tr>
+<tr class="row-odd"><td>&#64;NotBlank</td>
+<td>只用于String,不能为null且trim()之后size&gt;0</td>
+</tr>
+<tr class="row-even"><td>&#64;NotEmpty</td>
+<td>字符串不为null,集合有元素</td>
+</tr>
+<tr class="row-odd"><td>&#64;ParameterScriptAssert</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td>&#64;Range(min=, max=)</td>
+<td>数字必须大于min,小于等于max</td>
+</tr>
+<tr class="row-odd"><td>&#64;SafeHtml</td>
+<td>字符串必须是安全的html</td>
+</tr>
+<tr class="row-even"><td>&#64;ScriptAssert</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td>&#64;URL</td>
+<td>字符串是合法的URL</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="javax-validation">
+<h5>Javax.validation 校验<a class="headerlink" href="#javax-validation" title="永久链接至标题">¶</a></h5>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>注解</td>
+<td>含义</td>
+</tr>
+<tr class="row-even"><td>&#64;AssertFalse</td>
+<td>值必须为false</td>
+</tr>
+<tr class="row-odd"><td>&#64;AssertTrue</td>
+<td>值必须为true</td>
+</tr>
+<tr class="row-even"><td>&#64;DecimalMax(value=,inclusive=)</td>
+<td>值必须小于等于(inclusive=true)/小于(inclusive=false)value属性指定值，可以注解在字符串类型的属性上</td>
+</tr>
+<tr class="row-odd"><td>&#64;DecimalMin(value=,inclusive=)</td>
+<td>值必须大于等于(inclusive=true)/大于(inclusive=false)value属性指定值，可以注解在字符串类型的属性上</td>
+</tr>
+<tr class="row-even"><td>&#64;Digits(integer=,fraction=)</td>
+<td>数字格式检查，integer指定整数部分的最大长度，fraction指定小数部分最大长度</td>
+</tr>
+<tr class="row-odd"><td>&#64;Future</td>
+<td>值必须是未来的日期</td>
+</tr>
+<tr class="row-even"><td>&#64;Max(value=)</td>
+<td>值必须小于等于value指定的值，不能注解在字符串类型的注解上</td>
+</tr>
+<tr class="row-odd"><td>&#64;Min(value=)</td>
+<td>值必须大于等于value指定的值，不能注解在字符串类型的注解上</td>
+</tr>
+<tr class="row-even"><td>&#64;NotNull</td>
+<td>不能为null，字符串可以为”“,集合的元素数量可以为0</td>
+</tr>
+<tr class="row-odd"><td>&#64;Null</td>
+<td>值必须为空</td>
+</tr>
+<tr class="row-even"><td>&#64;Past</td>
+<td>值必须是过去的日期</td>
+</tr>
+<tr class="row-odd"><td>&#64;Pattern(regex=)</td>
+<td>字符串必须匹配正则表达式</td>
+</tr>
+<tr class="row-even"><td>&#64;Size(min=, max)</td>
+<td>集合的元素数量必须在min和max之间</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">注解</p>
+<p class="last">所有的注解均可通过修改message属性来自定义校验失败返回消息
+eg: <code class="docutils literal notranslate"><span class="pre">&#64;Min(value</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">message</span> <span class="pre">=</span> <span class="pre">&quot;年龄不可以小于1&quot;)</span></code></p>
+</div>
+</div>
+<div class="section" id="id8">
+<h5>自定义校验<a class="headerlink" href="#id8" title="永久链接至标题">¶</a></h5>
+<p>实现自定义检验，要创建一个注解以及一个检验类
+假如，我们有以下需求：deletedFlag字段传入的值必须为0和1，就得在deletedFlag字段上添加
+自定义的校验注解。</p>
+<p><strong>注解</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span>@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = NumberTrueOrFalseValidator.class)
+public @interface NumberTrueOrFalse {
+    String message() default &quot;值必须为0或者1&quot;;
+
+    Class&lt;?&gt;[] groups() default { };
+
+    Class&lt;? extends Payload&gt;[] payload() default { };
+}
+</pre></div>
+</div>
+<p>特别注意注解的元注解 <code class="docutils literal notranslate"><span class="pre">&#64;Target({ElementType.FIELD})</span></code> 表示这个注解只能用在属性上， <code class="docutils literal notranslate"><span class="pre">&#64;Constraint(validatedBy</span> <span class="pre">=</span> <span class="pre">NumberTrueOrFalseValidator.class)</span></code>
+表示这个注解的校验类为 <code class="docutils literal notranslate"><span class="pre">NumberTrueOrFalseValidator.class</span></code>，因此我们需要实现这个类:</p>
+<p><strong>校验类</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="k">class</span> <span class="nc">NumberTrueOrFalseValidator</span> <span class="n">implements</span> <span class="n">ConstraintValidator</span><span class="o">&lt;</span><span class="n">NumberTrueOrFalse</span><span class="p">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nd">@Override</span>
+    <span class="n">public</span> <span class="n">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">NumberTrueOrFalse</span> <span class="n">constraintAnnotation</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="n">public</span> <span class="n">boolean</span> <span class="n">isValid</span><span class="p">(</span><span class="n">Integer</span> <span class="n">value</span><span class="p">,</span> <span class="n">ConstraintValidatorContext</span> <span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s2">&quot;0&quot;</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">toString</span><span class="p">())</span> <span class="o">||</span> <span class="s2">&quot;1&quot;</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">toString</span><span class="p">());</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>校验类通过继承 <code class="docutils literal notranslate"><span class="pre">ConstraintValidator</span></code> 实现校验功能。
+校验类中可以注入Mapper,Service做一些其他更为复杂的校验，比如说检验一个值在数据库存不存在等等。
+除此以外，如果我们有下面的需求：如果用户为管理员，是不可以删除的。该怎么实现呢？在上个示例中，
+注解标注在DTO的属性上，只能获取该属性即一个Integer的值，这不能满足我们的需求，因此需要做一点点改变。</p>
+<p><strong>注解</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span>@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = AdminConstraintValidator.class)
+public @interface AdminConstraint {
+    String message() default &quot;不可以删除管理员&quot;;
+
+    Class&lt;?&gt;[] groups() default { };
+
+    Class&lt;? extends Payload&gt;[] payload() default { };
+}
+</pre></div>
+</div>
+<p>注意 <code class="docutils literal notranslate"><span class="pre">&#64;Target({ElementType.TYPE})</span></code> 表示注解用在类上。</p>
+<p><strong>校验类</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="k">class</span> <span class="nc">AdminConstraintValidator</span> <span class="n">implements</span> <span class="n">ConstraintValidator</span><span class="o">&lt;</span><span class="n">AdminConstraint</span><span class="p">,</span> <span class="n">Demo</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="nd">@Override</span>
+    <span class="n">public</span> <span class="n">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">AdminConstraint</span> <span class="n">constraintAnnotation</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="n">public</span> <span class="n">boolean</span> <span class="n">isValid</span><span class="p">(</span><span class="n">Demo</span> <span class="n">value</span><span class="p">,</span> <span class="n">ConstraintValidatorContext</span> <span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">StringUtils</span><span class="o">.</span><span class="n">equalsIgnoreCase</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">getName</span><span class="p">())</span> <span class="o">&amp;&amp;</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">value</span><span class="o">.</span><span class="n">getDeletedFlag</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">false</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">true</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>校验类中 <code class="docutils literal notranslate"><span class="pre">isValid()</span></code> 方法可以获取到Demo对象，因此可以同时获取到 <code class="docutils literal notranslate"><span class="pre">name</span></code> 和 <code class="docutils literal notranslate"><span class="pre">deletedFlag</span></code> 字段，完成关联校验。</p>
+</div>
+</div>
+<div class="section" id="id9">
+<h4>数据返回处理<a class="headerlink" href="#id9" title="永久链接至标题">¶</a></h4>
+<p>某些需求要求我们对同一个DTO返回不同的字段，比如说返回的简单视图只需要包括姓名，ID和工号，
+详细视图要求我们在简单视图的基础上添加生日等信息，使用 <code class="docutils literal notranslate"><span class="pre">&#64;JsonView</span></code> 注解就可以实现我们
+的需求</p>
+<p>如 <a class="reference internal" href="#dto">DTO</a>部分所示，在Demo类中声明两个接口，分别为DemoSimpleView和DemoDetailView，其中
+DemoDetailView继承DemoSimpleView。
+在需要简单视图上输出字段的getter方法上用 <code class="docutils literal notranslate"><span class="pre">&#64;JsonView(DemoSimpleView.class)</span></code> 标示，同理需要在
+详细视图上输出的字段的getter方法上用  <code class="docutils literal notranslate"><span class="pre">&#64;JsonView(DemoDetailView.class)</span></code> 标示。</p>
+<p><strong>用法</strong></p>
+<p>如 <a class="reference internal" href="#controller">Controller</a>部分所示，在需要输出详细视图的查询方法
+上用  <code class="docutils literal notranslate"><span class="pre">&#64;JsonView(DemoDetailView.class)</span></code> 标示，在需要输出简单视图的查询方法上用 <code class="docutils literal notranslate"><span class="pre">&#64;JsonView(DemoSimpleView.class)</span></code> 标示。</p>
+</div>
+</div>
+<div class="section" id="service">
+<h3>Service<a class="headerlink" href="#service" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id10">
+<h4>基本用法<a class="headerlink" href="#id10" title="永久链接至标题">¶</a></h4>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="n">interface</span> <span class="n">DemoService</span> <span class="n">extends</span> <span class="n">IBaseService</span><span class="o">&lt;</span><span class="n">Demo</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">ProxySelf</span><span class="o">&lt;</span><span class="n">DemoService</span><span class="o">&gt;</span> <span class="p">{}</span>
+</pre></div>
+</div>
+<p>通过继承 <code class="docutils literal notranslate"><span class="pre">IBaseService</span></code>, DemoService获得以下13个方法，可以分为以下四组:</p>
+<p><strong>较常规方法</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">insert(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">T</span> <span class="pre">record)</span></code> 插入单条数据并同时插入who字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">deleteByPrimaryKey(T</span> <span class="pre">record)</span></code> 根据主键删除</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">updateByPrimaryKey(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">T</span> <span class="pre">record)</span></code> 根据主键更新，同时更新who字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">selectByPrimaryKey(IRequest</span> <span class="pre">request,</span> <span class="pre">T</span> <span class="pre">record)</span></code> 根据主键查询</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">List&lt;T&gt;</span> <span class="pre">selectAll(IRequest</span> <span class="pre">iRequest)</span></code> 查询全部</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">List&lt;T&gt;</span> <span class="pre">select(IRequest</span> <span class="pre">request,</span> <span class="pre">T</span> <span class="pre">condition,</span> <span class="pre">int</span> <span class="pre">pageNum,</span> <span class="pre">int</span> <span class="pre">pageSize)</span></code> 条件查询分页查询</div>
+</div>
+<p><strong>批量方法</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">List&lt;T&gt;</span> <span class="pre">batchUpdate(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">List&lt;T&gt;</span> <span class="pre">list)</span></code> 批量更新并同时更新who字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">batchDelete(List&lt;T&gt;</span> <span class="pre">list)</span></code> 批量删除</div>
+</div>
+<p><strong>Selective方法</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">insertSelective(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">T</span> <span class="pre">record)</span></code></div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">updateByPrimaryKeySelective(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">T</span> <span class="pre">record)</span></code></div>
+</div>
+<p>insertSelective与insert方法的区别在于，insertSelective方法不会把null插入到数据库。举个例子，如果数据
+库的age字段默认值为20，DTO的age字段值为null，用insertSelective方法生成的sql不会包含age字段，因此数据库
+将使用默认值。如果用insert方法，生成的sql会包含age字段，值为null，此时插入数据库可能会抛异常。</p>
+<p><strong>Options方法</strong></p>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">List&lt;T&gt;</span> <span class="pre">selectOptions(IRequest</span> <span class="pre">request,</span> <span class="pre">T</span> <span class="pre">record,</span> <span class="pre">Criteria</span> <span class="pre">criteria)</span></code></div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">List&lt;T&gt;</span> <span class="pre">selectOptions(IRequest</span> <span class="pre">request,</span> <span class="pre">T</span> <span class="pre">record,</span> <span class="pre">Criteria</span> <span class="pre">criteria,</span> <span class="pre">Integer</span> <span class="pre">pageNum,</span> <span class="pre">Integer</span> <span class="pre">pageSize)</span></code></div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">updateByPrimaryKeyOptions(IRequest</span> <span class="pre">request,</span> <span class="pre">&#64;StdWho</span> <span class="pre">T</span> <span class="pre">record,Criteria</span> <span class="pre">criteria)</span></code></div>
+</div>
+<p>使用这3个方法在于理解 <code class="docutils literal notranslate"><span class="pre">Criteria</span></code> 类,</p>
+<ul class="simple">
+<li>属性</li>
+</ul>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">List&lt;Selection&gt;</span> <span class="pre">selectFields</span></code> 可用于selectOptions，设置查询字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">List&lt;SortField&gt;</span> <span class="pre">sortFields</span></code>  可用于selectOptions, 设置排序字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">List&lt;WhereField&gt;</span> <span class="pre">whereFields</span></code> 可用于selectOptions,设置条件字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">List&lt;String&gt;</span> <span class="pre">excludeSelectFields</span></code> 可用于selectOptions,设置不查询字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">List&lt;String&gt;</span> <span class="pre">updateFields</span></code> 可用于updatePrimaryKeyOptions,设置更新字段</div>
+</div>
+<ul class="simple">
+<li>方法</li>
+</ul>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">sort(String</span> <span class="pre">field,</span> <span class="pre">SortType</span> <span class="pre">sortType)</span></code> 设置排序字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">select(String...</span> <span class="pre">fields)</span></code> 设置查询字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">selectExtensionAttribute()</span></code> 设置查询扩展字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">unSelect(String...</span> <span class="pre">fields)</span></code> 设置不查询字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">where(Object...</span> <span class="pre">fields)</span></code> 设置条件字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">where(WhereField...</span> <span class="pre">fields)</span></code> 设置条件字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">Criteria</span> <span class="pre">where(String...</span> <span class="pre">fields)</span></code> 设置条件字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">update(String...</span> <span class="pre">fields)</span></code> 设置更新字段</div>
+</div>
+<div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">updateExtensionAttribute()</span></code> 设置更新扩展字段</div>
+</div>
+<ul class="simple">
+<li>用法示例</li>
+</ul>
+<p><strong>更新用户名/工号</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="n">Demo</span> <span class="n">update</span><span class="p">(</span><span class="n">IRequest</span> <span class="n">request</span><span class="p">,</span> <span class="n">Demo</span> <span class="n">demo</span><span class="p">)</span> <span class="n">throws</span> <span class="ne">BaseException</span> <span class="p">{</span>
+    <span class="n">Criteria</span> <span class="n">criteria</span> <span class="o">=</span> <span class="n">new</span> <span class="n">Criteria</span><span class="p">(</span><span class="n">demo</span><span class="p">);</span>
+    <span class="n">criteria</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_NAME</span><span class="p">,</span> <span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_NUMBER</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nb">super</span><span class="o">.</span><span class="n">updateByPrimaryKeyOptions</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">demo</span><span class="p">,</span> <span class="n">criteria</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>查询用户名/工号(用户名包括’A’的)，并根据年龄增序排序</strong></p>
+<div class="code java highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Demo</span><span class="o">&gt;</span> <span class="n">select</span><span class="p">(</span><span class="n">IRequest</span> <span class="n">request</span><span class="p">,</span> <span class="n">Demo</span> <span class="n">demo</span><span class="p">)</span> <span class="n">throws</span> <span class="ne">BaseException</span> <span class="p">{</span>
+    <span class="n">demo</span><span class="o">.</span><span class="n">setName</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">);</span>
+    <span class="n">Criteria</span> <span class="n">criteria</span> <span class="o">=</span> <span class="n">new</span> <span class="n">Criteria</span><span class="p">(</span><span class="n">demo</span><span class="p">);</span>
+    <span class="n">criteria</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_NAME</span><span class="p">,</span> <span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_NUMBER</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">();</span>
+    <span class="n">criteria</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_NAME</span><span class="p">,</span> <span class="n">new</span> <span class="n">WhereField</span><span class="p">(</span><span class="n">Role</span><span class="o">.</span><span class="n">FIELD_ROLE_CODE</span><span class="p">,</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">LIKE</span><span class="p">));</span>
+    <span class="n">criteria</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">Demo</span><span class="o">.</span><span class="n">FIELD_AGE</span><span class="p">,</span> <span class="n">SortType</span><span class="o">.</span><span class="n">ASC</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nb">super</span><span class="o">.</span><span class="n">selectOptions</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">demo</span><span class="p">,</span> <span class="n">criteria</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="id11">
+<h2>前端开发<a class="headerlink" href="#id11" title="永久链接至标题">¶</a></h2>
+<p>前端开发的核心在于CSS HTML JS的分离以及模块化，以提高可维护性。</p>
+<div class="section" id="id12">
+<h3>模板<a class="headerlink" href="#id12" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id13">
+<h4>效果<a class="headerlink" href="#id13" title="永久链接至标题">¶</a></h4>
+<img alt="../_images/quick-start-demo.jpg" src="../_images/quick-start-demo.jpg" />
+<div class="code html highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;script src=&#39;${base.contextPath}/common/code?yesOrNo=SYS.YES_NO&amp;alignType=SYS.ALIGN_TYPE&#39;&gt;&lt;/script&gt;
+&lt;style&gt;
+    /* 此处统一设置内部样式 */
+    #queryPanel {
+        margin-right: 5px;
+    }
+
+    #queryDetail &gt; .row &gt; input: {
+        width: 150px;
+    }
+
+    #queryDetail &gt; .row &gt; input:first-child {
+        margin-right: 5px;
+    }
+&lt;/style&gt;
+&lt;body&gt;
+
+&lt;div id=&quot;grid&quot;&gt;&lt;/div&gt;
+
+&lt;!-- 工具组模块 --&gt;
+&lt;script id=&quot;toolbar&quot; type=&quot;text/x-kendo-template&quot;&gt;
+    &lt;div class=&quot;pull-left&quot;&gt;
+        &lt;span data-bind=&#39;click:create&#39; class=&#39;btn btn-primary k-grid-add&#39;&gt;&lt;i
+                class=&#39;fa fa-plus-square&#39;&gt;&lt;/i&gt;新建&lt;/span&gt;
+        &lt;span data-bind=&#39;click:save&#39; class=&#39;btn btn-success k-grid-save-changes&#39;&gt;&lt;i
+                class=&#39;fa fa-save&#39;&gt;&lt;/i&gt;保存&lt;/span&gt;
+        &lt;span class=&#39;btn btn-danger k-grid-remove&#39;&gt;&lt;i
+                class=&#39;fa fa-trash-o&#39;&#39;&gt;&lt;/i&gt;删除&lt;/span&gt;
+        &lt;span data-bind=&#39;click:exportExcel&#39; class=&#39;btn btn-info k-grid-excel&#39;&gt;&lt;i
+                class=&#39;fa fa-file-excel-o&#39; &#39;&gt;&lt;/i&gt;导出Excel&lt;/span&gt;
+    &lt;/div&gt;
+&lt;/script&gt;
+
+&lt;!-- 查询面板模板 --&gt;
+&lt;script id=&quot;query&quot; type=&quot;text/x-kendo-template&quot;&gt;
+    &lt;div class=&quot;pull-right&quot; id=&quot;queryPanel&quot;&gt;
+        &lt;div class=&quot;k-query-simple&quot;&gt;
+            &lt;input data-bind=&quot;value:model.model1&quot; id=&quot;model1&quot; title=&quot;model1&quot; placeholder=&quot;model1&quot; class=&quot;k-textbox&quot;
+                   style=&quot;margin-right: 5px&quot;/&gt;
+            &lt;input data-bind=&quot;value:model.model2&quot; id=&quot;model2&quot; title=&quot;model2&quot; placeholder=&quot;model2&quot; class=&quot;k-textbox&quot;/&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;k-query-detail&quot; id=&quot;queryDetail&quot;&gt;
+            &lt;div class=&quot;row&quot; style=&quot;margin-bottom:5px&quot;&gt;
+                &lt;input data-bind=&quot;value:model.model3&quot; id=&quot;model3&quot; title=&quot;model3&quot;/&gt;
+                &lt;input data-bind=&quot;value:model.model4&quot; id=&quot;model4&quot; title=&quot;model4&quot; class=&quot;k-textbox&quot;/&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/script&gt;
+
+&lt;script type=&quot;text/javascript&quot;&gt;
+    $(document).ready(function () {
+        // 必须声明为全局变量否则Hap.createGridDataSource无法读到
+        window.viewModel = Hap.createGridViewModel(&#39;#grid&#39;, {
+            model: {
+                // 此处存放自己其他组件委托viewModel保存的数据
+            },
+            prepareComponents: function () {
+                // 在这儿初始化组件
+                // 给查询模板，自动生成查询及重置按扭 在grid初始化后调用
+                $(&#39;#queryPanel&#39;).kendoQueryPanel({
+                    queryFunction: function () {
+                        viewModel.query();
+                    },
+                    resetFunction: function () {
+                        viewModel.reset();
+                    }
+                });
+
+                // Grid的toolbar组件不支持remove操作，需写自定义函数 仅支持cancel-取消 create-创建 save-保存, excel-导出excel pdf-导出pdf
+                $(&#39;.k-grid-remove&#39;).click(function () {
+                    viewModel.remove();
+                });
+
+                $(&#39;#model3&#39;).kendoDropDownList({
+                    optionLabel: &#39;是否&#39;,
+                    dataTextField: &#39;meaning&#39;,
+                    dataValueField: &#39;value&#39;,
+                    valuePrimitive: true,
+                    dataSource: yesOrNo
+                });
+            }
+        });
+
+
+        var dataSourceConfig = {};
+        dataSourceConfig.url = _basePath + &#39;/hap/demo/&#39;;
+        dataSourceConfig.pageSize = 10;
+        dataSourceConfig.model = kendo.data.Model.define({
+            id: &#39;id&#39;,
+            fields: {
+                id: {
+                    type: &#39;number&#39;,
+                    editable: false,
+                },
+                name: {
+                    type: &#39;string&#39;,
+                    editable: true,
+                },
+                number: {
+                    type: &#39;string&#39;,
+                    validation: {
+                        required: true
+                    }
+                },
+                age: {
+                    type: &#39;number&#39;
+                },
+                birthday: {
+                    type: &#39;date&#39;
+                },
+                deletedFlag: {
+                    type: &#39;number&#39;
+                }
+            }
+        });
+
+        var dataSource = Hap.createGridDataSource(dataSourceConfig);
+
+        var grid = $(&#39;#grid&#39;).kendoGrid({
+            columns: [
+                {
+                    field: &#39;id&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.id&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+                {
+                    field: &#39;name&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.name&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+                {
+                    field: &#39;number&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.number&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+                {
+                    field: &#39;age&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.age&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+                {
+                    field: &#39;birthday&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.birthday&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+                {
+                    field: &#39;deletedFlag&#39;,
+                    title: &#39;&lt;@spring.message &quot;demo.deletedFlag&quot;/&gt;&#39;,
+                    width: 120,
+                    headerAttributes: {
+                        &#39;class&#39;: &#39;table-header-cell&#39;,
+                        style: &#39;text-align: center&#39;
+                    },
+                    attributes: {style: &#39;text-align:center&#39;},
+                },
+            ],
+            dataBound: function () {
+                if (parent.autoResizeIframe) {
+                    parent.autoResizeIframe(&#39;${RequestParameters.functionCode!}&#39;)
+                }
+            },
+            dataSource: dataSource,
+            editable: true,
+            navigatable: false,
+            pageable: {
+                buttonCount: 5,
+                pageSizes: [5, 10, 20, 50, &#39;all&#39;],
+                refresh: true,
+            },
+            resizable: true,
+            scrollable: true,
+            selectable: &#39;multiple, rowbox&#39;,
+            toolbar: [
+                // 引入工具条
+                {
+                    template: kendo.template($(&#39;#toolbar&#39;).html())
+                },
+                // 引入条件查询面板模板
+                {
+                    template: kendo.template($(&#39;#query&#39;).html())
+                }
+            ],
+        }).data(&#39;kendoGrid&#39;);
+
+        // 初始化kendo组件
+        viewModel.prepareComponents();
+
+        // 初始化查询面板键盘查询
+        Hap.initEnterQuery(&#39;#query-form&#39;, viewModel.query);
+
+        kendo.bind(grid, viewModel);
+
+        // 条件查询详细查询需重新绑定，上一步没绑定上，不清楚原因
+        kendo.bind($(&#39;#queryDetail&#39;), viewModel);
+    });
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id14">
+<h3>快码引入<a class="headerlink" href="#id14" title="永久链接至标题">¶</a></h3>
+<p>引入多个快码用 <code class="docutils literal notranslate"><span class="pre">&amp;</span></code> 连接，避免多次发送Http请求带来的性能损耗。如下所示:</p>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;script</span> <span class="pre">src=/'${base.contextPath}/common/code?yesOrNo=SYS.YES_NO&amp;alignType=SYS.ALIGN_TYPE'&gt;&lt;/script&gt;</span></code></p>
+</div>
+<div class="section" id="id15">
+<h3>模块化<a class="headerlink" href="#id15" title="永久链接至标题">¶</a></h3>
+<ul class="simple">
+<li>一个普通的 Kendo Grid 一般需要一个工具组组件和一个条件查询组件。可以用 Kendo Template 封装，然后在Grid中引入。核心的
+html元素一个div标签足够</li>
+<li>JavaScript 代码建议写到一起，用一个Script包裹，放在 <code class="docutils literal notranslate"><span class="pre">body</span></code> 结束标签之前</li>
+<li>CSS 代码不能要html杂糅在一起(封装的组件除外)，放在 <code class="docutils literal notranslate"><span class="pre">body</span></code> 起始标签之前</li>
+</ul>
+<p><strong>注意</strong></p>
+<p>Grid的toolbar组件不支持remove操作，需写自定义函数 仅支持cancel-取消 create-创建 save-保存, excel-导出excel pdf-导出pdf
+<a class="reference external" href="https://docs.telerik.com/kendo-ui/api/javascript/ui/grid/configuration/toolbar.name">Grid API 参考</a></p>
+</div>
+<div class="section" id="datasource">
+<h3>DataSource<a class="headerlink" href="#datasource" title="永久链接至标题">¶</a></h3>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">var</span> <span class="n">dataSourceConfig</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="n">dataSourceConfig</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">_basePath</span> <span class="o">+</span> <span class="s1">&#39;/hap/demo/&#39;</span><span class="p">;</span>
+<span class="n">dataSourceConfig</span><span class="o">.</span><span class="n">pageSize</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="n">dataSourceConfig</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">kendo</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Model</span><span class="o">.</span><span class="n">define</span><span class="p">({</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span><span class="p">,</span>
+            <span class="n">editable</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">name</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;string&#39;</span><span class="p">,</span>
+            <span class="n">editable</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">number</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;string&#39;</span><span class="p">,</span>
+            <span class="n">validation</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">required</span><span class="p">:</span> <span class="n">true</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="n">age</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span>
+        <span class="p">},</span>
+        <span class="n">birthday</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;date&#39;</span>
+        <span class="p">},</span>
+        <span class="n">deletedFlag</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nb">type</span><span class="p">:</span> <span class="s1">&#39;number&#39;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="n">var</span> <span class="n">dataSource</span> <span class="o">=</span> <span class="n">Hap</span><span class="o">.</span><span class="n">createGridDataSource</span><span class="p">(</span><span class="n">dataSourceConfig</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="section" id="id16">
+<h4>前端数据校验<a class="headerlink" href="#id16" title="永久链接至标题">¶</a></h4>
+<p>前端的数据校验在DataSource中的Model中完成。
+在model-fileds-[property]中</p>
+<ul class="simple">
+<li>editable 指定是否可以编辑，默认为true</li>
+<li>type 指定字段类型 可选{number|string|boolean|date} 默认为string</li>
+<li>nullable 如果为true,将不会设置默认值</li>
+<li>defaultValue 指定默认值</li>
+<li>validation 指定校验规则 对象形式，可以指定是否必输，以及最大、最小值</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id17">
+<h3>自定义单元格展示模板及编辑器<a class="headerlink" href="#id17" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id18">
+<h4>展示模板<a class="headerlink" href="#id18" title="永久链接至标题">¶</a></h4>
+<p>在 <code class="docutils literal notranslate"><span class="pre">grid.columns.template</span></code> 中配置</p>
+<p>配置展示样式(强调)</p>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">columns</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span>
+    <span class="n">field</span><span class="p">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+    <span class="n">template</span><span class="p">:</span> <span class="n">function</span><span class="p">(</span><span class="n">dataItem</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;&lt;strong&gt;&quot;</span> <span class="o">+</span> <span class="n">dataItem</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;&lt;/strong&gt;&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}],</span>
+</pre></div>
+</div>
+<p>配置展示格式(小数千分位形式)</p>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>columns: [ {
+    field: &quot;name&quot;,
+    template: function(dataItem) {
+      return  (&quot;&quot; + dataItem.total).replace(/(\d{1,3})(?=(\d{3})+(?:$|\.))/g, &quot;$1,&quot;);;
+    }
+}],
+</pre></div>
+</div>
+</div>
+<div class="section" id="id19">
+<h4>常用编辑器<a class="headerlink" href="#id19" title="永久链接至标题">¶</a></h4>
+<p>在 <code class="docutils literal notranslate"><span class="pre">grid.columns.editor</span></code> 中配置</p>
+<div class="section" id="id20">
+<h5>多语言<a class="headerlink" href="#id20" title="永久链接至标题">¶</a></h5>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>editor: function (container, options) {
+            $(&#39;&lt;input required name= &quot;&#39; + options.field + &#39;&quot; /&gt;&#39;)
+                .appendTo(container)
+                .kendoTLEdit({
+                    idField: &#39;unitId&#39;,
+                    field: &#39;name&#39;,
+                    dto: &quot;com.hand.hap.hr.dto.HrOrgUnit&quot;,
+                    model: options.model
+                });
+        }
+</pre></div>
+</div>
+</div>
+<div class="section" id="dropdownlist">
+<h5>DropDownList<a class="headerlink" href="#dropdownlist" title="永久链接至标题">¶</a></h5>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>editor: function (container, options) {
+            $(&#39;&lt;input required name=&quot;&#39; + options.field + &#39;&quot; /&gt;&#39;)
+                    .appendTo(container)
+                    .kendoTLEdit({
+                        idField: &#39;unitId&#39;,
+                        field: &#39;name&#39;,
+                        dto: &quot;com.hand.hap.hr.dto.HrOrgUnit&quot;,
+                        model: options.model
+                    });
+        }
+</pre></div>
+</div>
+</div>
+<div class="section" id="datepicker">
+<h5>DatePicker<a class="headerlink" href="#datepicker" title="永久链接至标题">¶</a></h5>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>editor: function (container, options) {
+            var end = options.model.endActiveDate;
+            var opts = {
+                format: &quot;yyyy-MM-dd&quot;
+            };
+            if (end) {
+                opts.max = end;
+            }
+            $(&#39;&lt;input name=&quot;&#39; + options.field + &#39;&quot;/&gt;&#39;)
+                .appendTo(container)
+                .kendoDatePicker(opts);
+    },
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">注解</p>
+<p class="last">此例子也展示了如何获取同条记录的不同字段值，如 <code class="docutils literal notranslate"><span class="pre">options.model.endActiveDate</span></code>，在这个例子中
+获取结束有效时间来设置开始有效时间的最大值。</p>
+</div>
+</div>
+<div class="section" id="lov">
+<h5>LOV<a class="headerlink" href="#lov" title="永久链接至标题">¶</a></h5>
+<div class="code javascript highlight-default notranslate"><div class="highlight"><pre><span></span>editor: function (container, options) {
+            $(&#39;&lt;input name=&quot;&#39; + options.field + &#39;&quot;/&gt;&#39;)
+                    .appendTo(container)
+                    .kendoLov($.extend(&lt;@lov &quot;LOV_UNIT&quot;/&gt;, {
+                        query: function (e) {
+                            e.param[&#39;enabledFlag&#39;] = &#39;Y&#39;
+                        },
+                        textField: &#39;parentName&#39;,
+                        model: options.model,
+                        select: function(e){
+                            options.model.set(&#39;parentCode&#39;, e.item.unitCode)
+                        }
+                    }));
+        }
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="viewmodel">
+<h3>ViewModel<a class="headerlink" href="#viewmodel" title="永久链接至标题">¶</a></h3>
+<p>viewModel 用于做和页面数据的双向绑定，同时可以存放一些自定义的函数。比如完成组件初始化的函数- <code class="docutils literal notranslate"><span class="pre">prepareComponnents()</span></code></p>
+</div>
+</div>
+<div class="section" id="id21">
+<h2>其他<a class="headerlink" href="#id21" title="永久链接至标题">¶</a></h2>
+<ol class="arabic simple">
+<li>Hap 框架上的某些功能不能满足需求</li>
+</ol>
+<blockquote>
+<div>可以考虑重写框架的代码，页面、Java代码、配置文件均可以，只需保证重写的代码文件与原文件
+在路径上保持一致，重写的代码文件在编译时将有更高的优先级。</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">文档</a></h1>
+
+
+
+
+
+
+
+
+<h3>导航</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hap 开发基本流程</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">说明</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">后端开发</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">前端开发</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id21">其他</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../index.html" title="上一章">Hap开发相关文档</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>快速搜索</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="转向" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Yang Fan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/hap/quick-start.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
