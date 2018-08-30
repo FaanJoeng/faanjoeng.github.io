@@ -1,0 +1,189 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh_CN">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Java应用性能监控与调优 &#8212; 文档 rc 文档</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/translations.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="java">
+<h1>Java应用性能监控与调优<a class="headerlink" href="#java" title="永久链接至标题">¶</a></h1>
+<div class="section" id="jdk">
+<h2>基于JDK命令行工具的监控<a class="headerlink" href="#jdk" title="永久链接至标题">¶</a></h2>
+<div class="section" id="jvm">
+<h3>JVM参数类型<a class="headerlink" href="#jvm" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id1">
+<h4>标准参数<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h4>
+<p>-help
+-server
+-client
+-version -showversion
+-cp -classpath</p>
+</div>
+<div class="section" id="x">
+<h4>X参数<a class="headerlink" href="#x" title="永久链接至标题">¶</a></h4>
+<p>-Xlint 解释执行
+-Xcomp 第一次使用就编译为本地代码
+-Xmixed 混合模式，JVM自己来决定是否编译成本地代码</p>
+</div>
+<div class="section" id="xx">
+<h4>XX参数<a class="headerlink" href="#xx" title="永久链接至标题">¶</a></h4>
+<p>非标准化参数 相对不稳定 主要用于JVM调优和Debug</p>
+<div class="section" id="boolean">
+<h5>Boolean类型<a class="headerlink" href="#boolean" title="永久链接至标题">¶</a></h5>
+<p>格式:-XX[+-]&lt;name&gt; 表示启用或者禁用name属性</p>
+<p>例子 -XX:+UseG1GC</p>
+</div>
+<div class="section" id="id2">
+<h5>非Boolean类型<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h5>
+<p>格式:-XX:&lt;name&gt;=&lt;value&gt; 表示name属性的值是value</p>
+<p>比如: -XX:GCTimeRatio=19</p>
+<p>-Xmx等价于-XX:MaxHeapSize
+-Xms等价于-XX:InitialHeapSize</p>
+<p>ps -ef | grep tomcat</p>
+<p>jinfo -flag MaxHeapSize 进程ID  结果单位为K</p>
+</div>
+</div>
+</div>
+<div class="section" id="id3">
+<h3>查看JVM运行时参数<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h3>
+<p>-XX:+PrintFlagsInitial 查看初始值
+-XX:+PrintFlagsFinal 查看最终值
+-XX:+UnlockExperimentalVMOptions 解锁实验参数
+-XX:+PrintCommandLineFlags 打印命令行参数</p>
+<p>= 表示默认值
+:= 表示被用户或JVM修改过的值</p>
+<p>jinfo -flag MaxHeapSize pid</p>
+<p>jindo -flags pid 打印非默认值</p>
+<p>jps -l</p>
+</div>
+<div class="section" id="jstatjvmt">
+<h3>jstat查看JVMt统计信息<a class="headerlink" href="#jstatjvmt" title="永久链接至标题">¶</a></h3>
+<p>jstat -class 类加载
+jstat -compiler JIT编译
+jstat -gc 垃圾收集
+jstat -printcompilatioin</p>
+<p>jstat -class pid 1000 10  每1000毫秒输出10次</p>
+</div>
+<div class="section" id="id4">
+<h3>实战内存溢出<a class="headerlink" href="#id4" title="永久链接至标题">¶</a></h3>
+</div>
+<div class="section" id="id5">
+<h3>导出内存溢出文件<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h3>
+<div class="section" id="id6">
+<h4>内存溢出自动导出<a class="headerlink" href="#id6" title="永久链接至标题">¶</a></h4>
+<p>-XX:+HeapDumpOnOutOfMemoryError
+-XX:+HeapDumpPath=./</p>
+</div>
+<div class="section" id="jmap">
+<h4>jmap命令手动导出<a class="headerlink" href="#jmap" title="永久链接至标题">¶</a></h4>
+<p>jmap -dump:format=b,file=heap.hprof pid</p>
+<p>， 查看内存占用</p>
+</div>
+</div>
+<div class="section" id="mat">
+<h3>MAT分析内存溢出<a class="headerlink" href="#mat" title="永久链接至标题">¶</a></h3>
+</div>
+</div>
+<div class="section" id="btrace">
+<h2>基于Btrace的监控调试<a class="headerlink" href="#btrace" title="永久链接至标题">¶</a></h2>
+</div>
+<div class="section" id="tomcat">
+<h2>Tomcat调优<a class="headerlink" href="#tomcat" title="永久链接至标题">¶</a></h2>
+<div class="section" id="debug">
+<h3>远程Debug<a class="headerlink" href="#debug" title="永久链接至标题">¶</a></h3>
+<p>./bin/startup.sh 在最后一行的start前加入jpda
+./bin/catalina.sh</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">文档</a></h1>
+
+
+
+
+
+
+
+
+<h3>导航</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Hap 开发基本流程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mapper.html">Hap 通用Mapper 详解</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>快速搜索</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="转向" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Yang Fan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/hap/monitor-tuning.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

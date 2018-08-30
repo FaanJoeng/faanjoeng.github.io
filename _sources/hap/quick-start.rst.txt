@@ -38,16 +38,20 @@ DTO
     
         @Length(max = 50, message = "名字不可以超过50个字符")
         @NotBlank
+        @Where
         private String name;
     
         @Length(max = 15, message = "工号不可以超过15个字符")
         @NotBlank
         @NumberNonexistent
+        @Where
         private String number;
     
+        @Column
         @Min(value = 1, message = "年龄不可以小于1")
         private Integer age;
-    
+        
+        @Column
         @Past(message = "生日必须为过去的时间")
         private Date birthday;
     
@@ -117,7 +121,6 @@ DTO
 
 | ``@NameStyle`` 应用于DTO类 默认将实体类字段按驼峰转下划线形式转换为表列名 userName -> user_name
 | ``@ColumnType`` 与 ``@Column`` 类似
-| ``@KeySql`` 配置如何生成主键
 | ``@Version`` 实现乐观锁主键
  
 **JPA注解** 
@@ -128,19 +131,74 @@ DTO
 | ``@Id`` **常用** **必须** 标示主键字段 
 | ``@GeneratedValue`` **常用** **必须** 配置如何生成主键 和@Id合用
 
-
 **Hap注解**
 
 | ``@ExtensionAttribute(disable = true)``  **常用** **必须** 用于类 弹性字段 默认启用弹性字段
-| ``@Condition`` 配置Where查询
+| ``@Condition`` 配置Where查询 用于select selectOne方法
   
 * operator ``=``  ``<``  ``>`` ``<=`` ``=>`` ``LIKE`` ``<>``  ``!=`` 默认为 ``=``
 * autowarp 当operator为LIKE是有效 true -> ``xx LIKE concat('%',concat(#{yy},'%'))`` false -> ``xx LIKE #{yy}`` 默认为true
 * exclude 排除这个字段 默认为false
 
+``@Where`` 注解的comparison与 ``@Condition`` 的operator属性看起来相似，实际上他们的作用领域不一样，
+``@Condition`` 与select selectOne方法配套使用， ``@Where``  与selectOptions配套使用
+
 | ``@MultiLanguage`` 标示多语言类
 | ``@MultiLanguageField`` 标示多语言字段
 | ``@Children`` 标示头行结构行list字段
+
+| ``@JoinTable @JoinOn @JoinColumn`` 配套使用
+
+* 示例用法
+
+  .. code:: java
+    
+    @JoinTable(name = "companyJoin", target = "Company.class", 
+               type = JoinType.LEFT, on = {@JoinOn(joinField=Company.FIELD_COMPANY_ID)})
+    private Long companyId;
+    
+    @Transient
+    @JoinColumn(name = "companyJoin", field = Company.FIELD_COMPANY_FULL_NAME)
+    private String companyName; 
+
+要和 ``service.selectOptions``, ``mapper.selectOptions`` 搭配使用 
+
+| ``@JoinCode`` 关联快码
+
+* 示例用法
+
+  .. code:: java 
+
+    private String companyType;
+
+    @Transient
+    @JoinCode(code = "SYS.UNIT_TYPE", joinKey = FIELD_COMPANY_TYPE)
+    private String companyTypeName;
+
+code 指需要关联的快码代码，本例指用companyType的值与快码的值关联，将快码的含义赋值给companyTypeName，
+需要和 ``service.selectOptions``, ``mapper.selectOptions`` 搭配使用 
+
+| ``@JoinCache`` 关联缓存
+
+* 示例用法
+
+.. code:: java
+    
+    private String functionName;
+
+    private Long parentFunctionId;
+
+    @Transient
+    @JoinCache(joinKey = FIELD_PARENT_FUNCTION_ID, joinColumn = FIELD_FUNCTION_NAME, 
+               cacheName = "function")
+    private String parentFunctionName; 
+
+在查询的时候会取redis的 ``hap:cache:function`` 目录查找, 用parentFunctionId取关联缓存数据的键，然后再从缓存数据的值中取出
+functionName字段的值，填充到DTO的parentFunctionName字段。需要和 ``service.selectOptions``, ``mapper.selectOptions`` 搭配使用       
+
+| ``@JoinLov`` 关联LOV(TODO)
+
+| ``@JoinTables`` (TODO) 
 
    使用 ``@Column`` 的意义:
 
@@ -149,7 +207,36 @@ DTO
 
   【强制】 POJO 类中布尔类型的变量，都不要加 is，否则部分框架解析会引起序列化错误。（参见:阿里Java开发规范-编程规约-命名风格-8）
 
+**JackSon注解**
+
+| ``@JsonFormat(pattern="yyyy-MM-dd HH:mm", timezone="GMT+8")``  可用于Date类型属性 方法 设置日期输出格式
+| ``@JsonInclude(JsonInclude.Include.NON_NULL)``  可用于类及属性 不返回为Null的字段
+| ``@JsonIgnore``  可用于属性及方法  忽略改字段
+| ``@JsonIgnoreProperties``  与JsonIgnore相似 用于类上
+| ``@JsonIgnoreType``  可用于类 当其他类有该类作为属性时，该属性将被忽略
+| ``@JsonProperty``  可用于属性 可以指定某个属性和json映射的名称
+| ``@JsonIgnore``  可用于属性及方法  忽略该字段
+
+* 仅在序列化时生效的注解
+| ``@JsonPropertyOrder`` 序列化时字段顺序
+| ``@JsonInclude``  指定序列化的条件
+ALWAYS 默认
+NON_NULL 属性为空 不序列化
+NON_ABSENT
+NON_EMPTY 属性为null,字符串length为0，集合大小为0 不序列化
+NON_DEFAULT 属性为默认值不序列化
+USE_DEFAULTS
+
+* 仅在反序列化时生效的注解
+| ``@JsonSetter`` 标注于setter方法上 可以解决json键和字段名名不匹配的问题
+
+**Spring注解**
+
+| ``@DateTimeFormat(pattern="yyyy-MM-dd")`` 设置从前端接收时间字符串的解析格式 
+
+
 其他注解将在后续内容进行讲解
+
 
 Controller
 +++++++++++
@@ -279,7 +366,7 @@ Hibernate 校验
     * - @SafeHtml 
       - 字符串必须是安全的html
     * - @ScriptAssert
-      -
+      - 用脚本进行校验
     * - @URL 
       - 字符串是合法的URL
 
@@ -326,7 +413,8 @@ Javax.validation 校验
 ::::::::::::
 实现自定义检验，要创建一个注解以及一个检验类
 假如，我们有以下需求：deletedFlag字段传入的值必须为0和1，就得在deletedFlag字段上添加
-自定义的校验注解。
+自定义的校验注解。自定义校验注解及校验类最好用public,即用单独的类，不然当手动校验时会出现
+问题。
 
 **注解**
 
@@ -405,6 +493,33 @@ Javax.validation 校验
     }
  
 校验类中 ``isValid()`` 方法可以获取到Demo对象，因此可以同时获取到 ``name`` 和 ``deletedFlag`` 字段，完成关联校验。
+
+手动校验
+:::::::::
+
+校验注解和校验类可以写在DTO内，但是强烈不建议这样做，因为手动校验时会出现 ``java.lang.IllegalAccessException``,
+不能初始化校验类。
+
+手动调用校验主要用于不是从Grid接收的数据，比如说从Excel数据，在将Excel数据转换为DTO类后，就可以手动来调用
+校验逻辑。
+
+**使用示例**
+
+.. code:: java 
+
+    Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+    Set<ConstraintViolation<Demo>> set = validator.validate(dto, Default.class);
+
+    if (CollectionUtils.isNotEmpty(set)) {
+        Map<String, String> errorMsg = new HashMap<>();
+        for (ConstraintViolation<Demo> cv : set) {
+                            errorMsg.put(cv.getPropertyPath().toString(), cv.getMessage());
+        }
+    }
+
+cv.getPropertyPath().toString() 获取校验失败的属性名，如果为关联校验，比如注解在DTO类上的，此时获取的值为空字符串
+cv.getMessage() 获取校验失败消息
+
 
 数据返回处理
 ============
@@ -506,6 +621,10 @@ insertSelective与insert方法的区别在于，insertSelective方法不会把nu
 
 | ``void updateExtensionAttribute()`` 设置更新扩展字段
 
+使用options系列方法需要把所有select的主表字段用@Column标注，where的主表字段
+用@Where标注。
+
+
 * 用法示例
 
 **更新用户名/工号**
@@ -549,7 +668,7 @@ Mapper
 效果
 =====
 
-.. image::  /.static/image/hap/quick-start-demo.jpg
+.. image::  /.static/image/hap/quick-start/quick-start-demo.jpg
 
 .. code:: html
 
@@ -609,6 +728,9 @@ Mapper
             window.viewModel = Hap.createGridViewModel('#grid', {
                 model: {
                     // 此处存放自己其他组件委托viewModel保存的数据
+                },
+                initializeData: function () {
+                    // 在这初始化需要的数据
                 },
                 prepareComponents: function () {
                     // 在这儿初始化组件
@@ -762,6 +884,9 @@ Mapper
                     }
                 ],
             }).data('kendoGrid');
+            
+            // 初始化数据 如果组件依赖于初始数据，务必在初始化组件之前初始化数据
+            viewModel.initializeData();
     
             // 初始化kendo组件
             viewModel.prepareComponents();
@@ -771,7 +896,7 @@ Mapper
     
             kendo.bind(grid, viewModel);
     
-            // 条件查询详细查询需重新绑定，上一步没绑定上，不清楚原因
+            // 条件查询详细查询需重新绑定，上一步没绑定上，尚不清楚原因
             kendo.bind($('#queryDetail'), viewModel);
         });
     </script>
@@ -850,6 +975,47 @@ DataSource
 * defaultValue 指定默认值
 * validation 指定校验规则 对象形式，可以指定是否必输，以及最大、最小值
 
+自定义校验逻辑
+:::::::::::::::::
+
+在简单的校验不能满足需求时，可以考虑通过dataSource的change事件实现自定义校验。
+
+.. code:: javascript
+
+    dataSource.bind('change', function (e) {
+                // 数据条目
+                var item = e.items[0];
+
+                // change 类型
+                var action = e.action;
+    
+                if (item == null) return;
+    
+                // 获取属性值
+                var name = item.name == null ? '' : item.name;
+                var age = item.age == null ? 0 : item.age;
+    
+                var uid = item.uid;
+    
+                if (action != null && action === 'itemchange') {
+                    if (age < 0) {
+                        kendo.ui.showInfoDialog({
+                            message: '年龄值不可以小于1'
+                        }).done(function (f) {
+                            // 可以重设值
+                            e.sender.getByUid(uid).set(e.field, 0);
+
+                            // 更新UI
+                            $('#grid').data('kendoGrid').refresh();
+                        });
+                    }
+                }
+            });
+
+通过e.item[0]获取数据条目，e.field获取被修改的字段，e.action获取事件类型，编辑值时的事件代码为itemChange。
+如果校验失败，可以通过e.sender.getByUid(e.item[0].uid).set()来重设字段值。另外可以借助Grid的refresh方法实现
+UI的更新。\ `Grid API 参考 <https://docs.telerik.com/kendo-ui/api/javascript/ui/grid/events/change>`_
+
 自定义单元格展示模板及编辑器
 ++++++++++++++++++++++++++++
 
@@ -862,9 +1028,9 @@ DataSource
 .. code:: javascript
 
   columns: [ {
-      field: "name",
+      field: 'name',
       template: function(dataItem) {
-        return "<strong>" + dataItem.name + "</strong>";
+        return '<strong>' + dataItem.name + '</strong>';
       }
   }],
 
@@ -873,12 +1039,11 @@ DataSource
 .. code:: javascript
 
   columns: [ {
-      field: "name",
+      field: 'name',
       template: function(dataItem) {
         return  ("" + dataItem.total).replace(/(\d{1,3})(?=(\d{3})+(?:$|\.))/g, "$1,");;
       }
   }],
-
 
 常用编辑器
 ==========
@@ -906,16 +1071,19 @@ DropDownList
 .. code:: javascript
 
     editor: function (container, options) {
-                $('<input required name="' + options.field + '" />')
-                        .appendTo(container)
-                        .kendoTLEdit({
-                            idField: 'unitId',
-                            field: 'name',
-                            dto: "com.hand.hap.hr.dto.HrOrgUnit",
-                            model: options.model
-                        });
-            }
-
+                     $('<input required name="' + options.field + '"/>')
+                         .appendTo(container)
+                         .kendoDropDownList({
+                             dataTextField: 'meaning',
+                             dataValueField: 'value',
+                             valuePrimitive: true,
+                             dataSource: profileLevelData,
+                             select: function(e) {
+                                options.model.set('levelValue', null);
+                                options.model.set('levelName', null);
+                             }
+                         });
+                 }        
 
 DatePicker
 :::::::::::::::
@@ -972,3 +1140,5 @@ viewModel 用于做和页面数据的双向绑定，同时可以存放一些自�
 
   可以考虑重写框架的代码，页面、Java代码、配置文件均可以，只需保证重写的代码文件与原文件
   在路径上保持一致，重写的代码文件在编译时将有更高的优先级。
+
+2. Hap引入Kendo UI版本落后于最新版本，可能会出现于API的不一致的行为

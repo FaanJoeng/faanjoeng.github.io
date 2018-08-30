@@ -1,0 +1,552 @@
+Hap 通用Mapper 详解
+####################
+
+说明
+********
+借助通用Mapper开发能节省了很多与数据库交互代码的编写，Hap的Mapper在开源项目 \ `Mapper <https://github.com/abel533/Mapper>`_ 的基础上
+做了一些改进，比如多语言的支持，关联Lov，关联缓存等功能。
+
+结构
+*******
+在使用通用Mapper时，需要让自己的定义Mapper接口去继承 ``com.hand.hap.mybatis.common.Mapper`` 接口以获取通用Mapper的方法。
+通用Mapper从代码上理解，通过不断继承父接口，以集成父接口的功能，从逻辑上，将最下层的接口(也就是我们刚刚继承的接口)分为第一层，
+其父接口分为第二、三、四层。使用时通常会直接继承第一层，也可以根据自己的需要直接去继承第二、三、四层的Mapper。首先看下第一层结构。
+
+.. code:: java
+
+    public interface Mapper<T> extends
+          BaseMapper<T>,
+          ExampleMapper<T>,
+          RowBoundsMapper<T>,
+          Marker {
+  
+          }
+
+第二层的接口一共有3个，BaseMapper/ExampleMapper/RowBoundsMapper。Marker是个标记接口，不提供实际功能。
+
+BaseMapper
+++++++++++++++
+BaseMapper作为第二层。它的结构如下：
+
+.. code:: java
+
+    public interface BaseMapper<T> extends
+            BaseSelectMapper<T>,
+            BaseInsertMapper<T>,
+            BaseUpdateMapper<T>,
+            BaseDeleteMapper<T> {
+    
+    }
+
+在第二层下还有第三层第四层结构，在此不展示具体代码，仅以表格进行说明：
+
+* BaseSelectMapper
+
+.. image::  /.static/image/hap/mapper/BaseSelectMapper.png
+
+* BaseInsertMapper
+
+.. image::  /.static/image/hap/mapper/BaseInsertMapper.png
+
+* BaseUpdateMapper
+
+.. image::  /.static/image/hap/mapper/BaseUpdateMapper.png
+
+* BaseDeleteMapper
+
+.. image::  /.static/image/hap/mapper/BaseDeleteMapper.png
+
+ExampleMapper
++++++++++++++++++
+和BaseMapper一样，为第二层接口。略微有些不同的是，这个系列的Mapper接口只有三层。它的结构如下:
+
+.. code:: java
+
+    public interface ExampleMapper<T> extends
+            SelectByExampleMapper<T>,
+            SelectCountByExampleMapper<T>,
+            DeleteByExampleMapper<T>,
+            UpdateByExampleMapper<T>,
+            UpdateByExampleSelectiveMapper<T> {
+    
+    }
+
+
+.. image::  /.static/image/hap/mapper/ExampleMapper.png
+
+
+RowBoundsMapper
++++++++++++++++++++
+同上为第二层。它的结构如下：
+
+.. code:: java 
+
+    public interface RowBoundsMapper<T> extends
+            SelectByExampleRowBoundsMapper<T>,
+            SelectRowBoundsMapper<T> {
+    
+    }
+
+.. image::  /.static/image/hap/mapper/RowBoundsMapper.png
+
+Marker
+++++++++++
+Marker不继承其他的接口，不属于层次结构型的接口，其作用在原理部分予以解析。
+
+
+其他二层接口
++++++++++++++++
+
+MySqlMapper
+===============
+Mysql数据库专用Mapper。
+
+.. image::  /.static/image/hap/mapper/MysqlMapper.png
+
+SqlServerMapper
+===================
+SqlServer数据库专用Mapper。
+
+.. image::  /.static/image/hap/mapper/SqlServerMapper.png
+
+ConditionMapper
+===================
+和ExampleMapper功能完全一样，底层实现也是调用的ExampleMapper的实现。
+ 
+原理
+********
+
+在\ `结构`_\ 部分，详述了接口的层次结构，可以看到最上层的Mapper均包含多个方法，并且有一个Provider
+类与之对应，Provider类里也有与同名的方法。
+这些Mapper方法是如何与MyBatis整合起来的呢？这正是这一部分要探讨的内容。
+
+Mapper注册
++++++++++++++
+Mapper注册这一步涉及两个类， ``com.hand.hap.mybatis.mapperhelper.MapperHelper`` 和 ``com.hand.hap.mybatis.spring.MapperScannerConfigurer``，还有一个配置文件
+``/spring/applicationContext``。
+
+以下xml片段截取自/spring/applicationContext.xml:
+
+.. code:: xml
+
+    <bean id="mapperScannerConfigurer" class="com.hand.hap.mybatis.spring.MapperScannerConfigurer">
+        <property name="basePackage" value="*.**.mapper"/>
+        <property name="processPropertyPlaceHolders" value="true"/>
+        <property name="propertiesMap">
+            <map>
+                <entry key="mappers" value="com.hand.hap.mybatis.common.Mapper"/>
+                <entry key="IDENTITY" value="${mybatis.identity}"/>
+                <entry key="dataBaseType" value="${db.type}"/>
+                <entry key="seqFormat" value="{3}_s.nextVal"/>
+                <entry key="enableMethodAnnotation" value="true"/>
+            </map>
+        </property>
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+
+和通用Mapper有关的配置，我们需要关注的是basePackage和propertiesmap下的mappers参数。basePackage的值为 ``*.**.mapper`` 意味者
+包路径的最后目录为mapper的类都将会被注册。
+
+处理通用Mapper接口
+====================
+
+以下java代码片段截取自com.hand.hap.mybatis.spring.MapperScannerConfigurer:
+
+.. code:: java
+
+    public class MapperScannerConfigurer extends org.mybatis.spring.mapper.MapperScannerConfigurer {
+        private Map<String,String> propertiesMap;
+
+        @Override
+        public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+            // 存储配置文件
+            Properties config = new Properties();
+
+            // 实际待设置的值
+            Properties p = new Properties();
+            try {
+                // 加载配置文件，用config存储 
+                config.load(getClass().getResourceAsStream("/config.properties"));
+                if (propertiesMap.get("ORDER") == null) {
+                    if ("JDBC".equalsIgnoreCase(propertiesMap.get("IDENTITY"))) {
+                        p.put("ORDER", "AFTER");
+                    } else {
+                        p.put("ORDER", "BEFORE");
+                    }
+                }
+
+                // 用配置文件的值替换xml里的占位符
+                propertiesMap.forEach((k,v)->{
+                    if (v.startsWith("${") && v.endsWith("}")) {
+                        p.put(k, config.getProperty(v.substring(2, v.length() - 1), v));
+                    } else {
+                        p.put(k, v);
+                    }
+                });
+
+                // 调用mapperHelper.setProperties方法设置参数
+                setProperties(p);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            
+            // 省略部分逻辑 将在后面进行解析
+        }
+    }
+
+Mapper的注册在这个方法里完成，同时需要对配置的其他参数进行设置，将config.properties的参数和xml里配置的参数整合到名为 ``p`` 的 Properties 
+对象里，然后调用了mapperHelper.setProperties。
+
+在Mapper注册的过程中，需要关注MapperHelper的 ``List<Class<?>> registerClass`` 和 ``Map<Class<?>, MapperTemplate> registerMapper`` 属性。
+registerClass 保存了已经注册的Mapper接口， registerMapper保存了已注册Mapper接口与MapperTemplate的对应关系。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+    public void setProperties(Properties properties) {
+        config.setProperties(properties);
+        //注册通用接口,获取xml中配置的mappers值，即com.hand.hap.mybatis.common.Mapper
+        String mapper = null;
+        if (properties != null) {
+            mapper = properties.getProperty("mappers");
+        }
+        if (StringUtil.isNotEmpty(mapper)) {
+            String[] mappers = mapper.split(",");
+            for (String mapperClass : mappers) {
+                if (mapperClass.length() > 0) {
+                    registerMapper(mapperClass);
+                }
+            }
+        }
+    }
+
+这一步获取在xml配置的参数mappers, 值为com.hand.hap.mybatis.common.Mapper。然后调用registerMapper方法进行注册，
+此处分析省略了由接口名转Class类的步骤。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+    public void registerMapper(Class<?> mapperClass) {
+        if (!registerMapper.containsKey(mapperClass)) {
+            registerClass.add(mapperClass);
+            registerMapper.put(mapperClass, fromMapperClass(mapperClass));
+        }
+        //自动注册继承的接口
+        Class<?>[] interfaces = mapperClass.getInterfaces();
+        if (interfaces != null && interfaces.length > 0) {
+            for (Class<?> anInterface : interfaces) {
+                registerMapper(anInterface);
+            }
+        }
+    }
+
+如果这个这个接口没有注册，则进行注册操作，并用 ``registerClass`` 记录注册的操作， ``registerMapper`` 保存注册的结果。
+这个注册是个递归的过程，先注册第一层接口，再根据第一层接口继承的接口去注册第二层的接口，以此类推，直到把第三层，第四层接口
+全部注册。
+
+处理通用Mapper方法
+====================
+接口的注册实质是方法的注册，接口方法的实际逻辑在与其对应的Provider同名方法中，所有的Provider类均继承了MapperTemplate这个类。
+方法注册的过程简而言之，是通过反射把Provider类的方法收集到MapperTemplate的methodMap属性中的过程，然后把已经收集完结果的MapperTemplate与
+Mapper接口建立对应关系，用MapperHelper的registerMapper属性保存。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+ .. code:: java
+
+     private MapperTemplate fromMapperClass(Class<?> mapperClass) {
+        Method[] methods = mapperClass.getDeclaredMethods();
+        Class<?> templateClass = null;
+        Class<?> tempClass = null;
+        Set<String> methodSet = new HashSet<>();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(SelectProvider.class)) {
+                SelectProvider provider = method.getAnnotation(SelectProvider.class);
+                tempClass = provider.type();
+                methodSet.add(method.getName());
+            } else if (method.isAnnotationPresent(InsertProvider.class)) {
+                InsertProvider provider = method.getAnnotation(InsertProvider.class);
+                tempClass = provider.type();
+                methodSet.add(method.getName());
+            } else if (method.isAnnotationPresent(DeleteProvider.class)) {
+                DeleteProvider provider = method.getAnnotation(DeleteProvider.class);
+                tempClass = provider.type();
+                methodSet.add(method.getName());
+            } else if (method.isAnnotationPresent(UpdateProvider.class)) {
+                UpdateProvider provider = method.getAnnotation(UpdateProvider.class);
+                tempClass = provider.type();
+                methodSet.add(method.getName());
+            }
+            if (templateClass == null) {
+                templateClass = tempClass;
+            } else if (templateClass != tempClass) {
+                throw new RuntimeException("一个通用Mapper中只允许存在一个MapperTemplate子类!");
+            }
+        }
+
+        // 不包含方法的接口如Mapper,BaseMapper,BaseSelectMapper等
+        if (templateClass == null || !MapperTemplate.class.isAssignableFrom(templateClass)) {
+            templateClass = EmptyProvider.class;
+        }
+        MapperTemplate mapperTemplate = null;
+        try {
+            mapperTemplate = (MapperTemplate) templateClass.getConstructor(Class.class, MapperHelper.class).newInstance(mapperClass, this);
+        } catch (Exception e) {
+            throw new RuntimeException("实例化MapperTemplate对象失败:" + e.getMessage());
+        }
+        //注册方法
+        for (String methodName : methodSet) {
+            try {
+                mapperTemplate.addMethodMap(methodName, templateClass.getMethod(methodName, MappedStatement.class));
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(templateClass.getCanonicalName() + "中缺少" + methodName + "方法!");
+            }
+        }
+        return mapperTemplate;
+    }
+
+Mapper接口中的所有方法的Provider类必须相同，如果不同会抛出异常。
+先获取Mapper接口的方法,如果Mapper接口方法没有方法(比如一二层接口)或者Mapper接口对应的Provider没有继承MapperTemplate，
+将templateClass设置为EmptyProvider.class。
+然后通过反射实例化MapperTemplate对象，此时注入MapperTemplate的MapperHelper对象是包括了xml和config.properties的值的。
+实例化完成后设置mapperTemplate对象methodMap的值，将最顶层Mapper接口中的所有方法put进去。
+
+
+实际注册过程
+=============
+到这一步，之前的所有操作的过程的成果都保存进了 ``com.hand.hap.mybatis.mapperhelper`` registerMapper属性。 
+
+我们再回到 ``com.hand.hap.mybatis.spring.MapperScannerConfigurer`` 的postProcessBeanDefinitionRegistry方法。
+
+以下java代码片段截取自com.hand.hap.mybatis.spring.MapperScannerConfigurer:
+
+.. code:: java
+
+    public class MapperScannerConfigurer extends org.mybatis.spring.mapper.MapperScannerConfigurer {
+        private Map<String,String> propertiesMap;
+
+        @Override
+        public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+            
+            // 省略配置加载及方法注册的过程
+            
+            // 调用父类方法执行普通的包扫描及xml配置中basePackage的值
+            super.postProcessBeanDefinitionRegistry(registry);
+            //如果没有注册过接口，就注册默认的Mapper接口
+            this.mapperHelper.ifEmptyRegisterDefaultInterface();
+
+            // 获取容器中的bean名称，如果bean的类型为org.mybatis.spring.mapper.MapperFactoryBean，则用
+            // com.hand.hap.mybatis.spring.MapperFactoryBean替换。
+            String[] names = registry.getBeanDefinitionNames();
+            GenericBeanDefinition definition;
+            for (String name : names) {
+                BeanDefinition beanDefinition = registry.getBeanDefinition(name);
+                if (beanDefinition instanceof GenericBeanDefinition) {
+                    definition = (GenericBeanDefinition) beanDefinition;
+                    if (StringUtil.isNotEmpty(definition.getBeanClassName())
+                            && definition.getBeanClassName().equals("org.mybatis.spring.mapper.MapperFactoryBean")) {
+                        definition.setBeanClass(MapperFactoryBean.class);
+                        definition.getPropertyValues().add("mapperHelper", this.mapperHelper);
+                    }
+                }
+            }        
+        }
+    }
+
+首先调用了父类的方法去完成常规Mapper接口的注册，然后检查如果没有注册过接口，就注册默认的接口，也就是说如果xml中的mappers属性
+没有配置将自动去注册默认值。
+然后去遍历Sprig容器里已经注册的所有的Bean,如果Bean是 ``org.mybatis.spring.mapper.MapperFactoryBean`` 类型的，那么用
+``com.hand.hap.mybatis.spring.MapperFactoryBean`` 进行替换。
+
+以下java代码片段截取自com.hand.hap.mybatis.spring.MapperFactoryBean:
+
+.. code:: java 
+
+    @Override
+    protected void checkDaoConfig() {
+        super.checkDaoConfig();
+        //通用Mapper
+        if (mapperHelper.isExtendCommonMapper(getObjectType())) {
+            mapperHelper.processConfiguration(getSqlSession().getConfiguration(), getObjectType());
+        }
+    }
+
+MapperFactoryBean是MyBatis-Spring 提供了一个动态代理的实现，它的代理类会实现所有的 ``*.**.mapper`` 包下的所有接口,并注入
+到IOC容器中。
+checkDaoConfig方法主要检查DAO配置，比如sqlSessionFactory、sqlSessionTemplate和接口对应的映射文件是否存在,如果检查通过，那么就把这个方法添加
+到Configuration里面去，注册Mapper。
+
+如果这个Mapper接口(用户自定义)继承了通用Mapper里的任何一个接口。那么就执行mapperHelper.processConfiguration方法。
+检查方法如下。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+    public boolean isExtendCommonMapper(Class<?> mapperInterface) {
+        for (Class<?> mapperClass : registerClass) {
+            if (mapperClass.isAssignableFrom(mapperInterface)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+     public void processConfiguration(Configuration configuration, Class<?> mapperInterface) {
+        String prefix;
+        if (mapperInterface != null) {
+            prefix = mapperInterface.getCanonicalName();
+        } else {
+            prefix = "";
+        }
+        for (Object object : new ArrayList<Object>(configuration.getMappedStatements())) {
+            if (object instanceof MappedStatement) {
+                MappedStatement ms = (MappedStatement) object;
+                if (ms.getId().startsWith(prefix) && isMapperMethod(ms.getId())) {
+                    if (ms.getSqlSource() instanceof ProviderSqlSource) {
+                        setSqlSource(ms);
+                    }
+                }
+            }
+        }
+    }
+
+Configuration对象里存了所有的MappedStatement实例(对应于XML文件或接口方法的一个SQL语句节点)，遍历这些MappedStatement，
+如果刚好它属于当前的Mapper接口并且是从通用Mapper继承来的方法，则执行setSqlSource操作。
+
+
+需要关注下检查方法是否为从通用Mapper继承来的方法。
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+    public boolean isMapperMethod(String msId) {
+        if (msIdSkip.get(msId) != null) {
+            return msIdSkip.get(msId);
+        }
+        for (Map.Entry<Class<?>, MapperTemplate> entry : registerMapper.entrySet()) {
+            if (entry.getValue().supportMethod(msId)) {
+                msIdSkip.put(msId, true);
+                msIdCache.put(msId, entry.getValue());
+                return true;
+            }
+        }
+        msIdSkip.put(msId, false);
+        return false;
+    }
+
+涉及到MapperHelper里的 ``Map<String, Boolean> msIdSkip`` (缓存skip结果) 和 ``Map<String, MapperTemplate> msIdCache`` （缓存msid和MapperTemplate）
+属性。
+在isMapperMethod方法中，如果这条SQL语句或者说MappedStatement已经被缓存了，返回缓存结果，如果没有缓存，则向下执行，
+进行检查。遍历已注册的通用Mapper接口，如果这个方法是从通过继承通用Mapper来的，把它的ID放入存储检查的结果的
+msIdSkip对象，并设置对应的值为true，方法对应的MapperTemplate存入msIdCache。如果不是从通用Mapper继承来的方法。
+把检查结果存入msIdSkip对象，并设置对应的值为false。msIdSkip存放检查的结果，msIdCache存放通用Mapper方法ID与MapperTemplate的
+对应关系。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperHelper:
+
+.. code:: java
+
+    public void setSqlSource(MappedStatement ms) {
+        MapperTemplate mapperTemplate = msIdCache.get(ms.getId());
+        try {
+            if (mapperTemplate != null) {
+                mapperTemplate.setSqlSource(ms);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+这个方法从msIdCache中取处理缓存的MapperTemplate方法，然后调用了MapperTemplate的setSqlSource方法。
+
+以下java代码片段截取自com.hand.hap.mybatis.mapperhelper.MapperTemplate:
+
+.. code:: java 
+
+    public void setSqlSource(MappedStatement ms) throws Exception {
+        if (this.mapperClass == getMapperClass(ms.getId())) {
+            throw new RuntimeException("请不要配置或扫描通用Mapper接口类：" + this.mapperClass);
+        }
+        Method method = methodMap.get(getMethodName(ms));
+        try {
+            //第一种，直接操作ms，不需要返回值
+            if (method.getReturnType() == Void.TYPE) {
+                method.invoke(this, ms);
+            }
+            //第二种，返回SqlNode
+            else if (SqlNode.class.isAssignableFrom(method.getReturnType())) {
+                SqlNode sqlNode = (SqlNode) method.invoke(this, ms);
+                DynamicSqlSource dynamicSqlSource = new DynamicSqlSource(ms.getConfiguration(), sqlNode);
+                setSqlSource(ms, dynamicSqlSource);
+            }
+            //第三种，返回xml形式的sql字符串
+            else if (String.class.equals(method.getReturnType())) {
+                String xmlSql = (String) method.invoke(this, ms);
+                SqlSource sqlSource = createSqlSource(ms, xmlSql);
+                //替换原有的SqlSource
+                setSqlSource(ms, sqlSource);
+            } else {
+                throw new RuntimeException("自定义Mapper方法返回类型错误,可选的返回类型为void,SqlNode,String三种!");
+            }
+            //cache
+            checkCache(ms);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e.getTargetException() != null ? e.getTargetException() : e);
+        }
+    }
+
+这一步根据方法名从methodMap中取出前述步骤保存的通用Mapper方法，并根据方法的返回值将方法分为3类。
+
+* 返回值为Void
+
+返回值为Void的方法只有两个selectOptions、selectOptionsByPrimaryKey。
+
+method.invoke(this, ms); 调用了Provider里的方法
+以selectOptions为例, 整个过程在设置调用时的resultMap
+
+.. code:: java
+
+    public void selectOptions(MappedStatement ms) {
+        initResultType(ms);
+    }
+
+.. code:: java
+
+    private void initResultType(MappedStatement ms){
+        Class<?> entityClass = getEntityClass(ms);
+        setResultType(ms, entityClass);
+    }
+
+.. code:: java
+
+    protected void setResultType(MappedStatement ms, Class<?> entityClass) {
+        EntityTable entityTable = EntityHelper.getEntityTable(entityClass);
+        List<ResultMap> resultMaps = new ArrayList<>();
+        resultMaps.add(entityTable.getResultMap(ms.getConfiguration()));
+        MetaObject metaObject = SystemMetaObject.forObject(ms);
+        metaObject.setValue("resultMaps", Collections.unmodifiableList(resultMaps));
+    }    
+
+
+* 返回值为SqlNode
+
+通用Mapper的Provider里没有返回值为SqlNode的方法
+
+* 返回值为String
+
+除selectOptions、selectOptionsByPrimaryKey外，返回值均为String。
+
+// TODO待续
+
+
+
+
